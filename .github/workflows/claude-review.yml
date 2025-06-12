@@ -9,15 +9,8 @@ jobs:
     name: "AI Keyword Check via Claude Code"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - run: pip install pygithub asttokens
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Trigger Claude review once
         uses: anthropics/claude-code-base-action@beta
