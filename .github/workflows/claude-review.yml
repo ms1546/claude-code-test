@@ -41,17 +41,15 @@ jobs:
           --jq '.data.repository.pullRequest.commits.nodes[].commit.author.name')
 
           prev=""
-
-          index=0
           duplicated=""
-          echo "$authors" | while read author; do
-            if [ "$author" = "$prev" ]; then
-              duplicated="$author"
-              break
-            fi
-            prev="$author"
-            index=$((index + 1))
-          done
+
+          while read author; do
+          if [ "$author" = "$prev" ]; then
+            duplicated="$author"
+            break
+          fi
+          prev="$author"
+          done <<< "$authors"
 
           if [ -n "$duplicated" ]; then
             echo "❌ 同じ author.name（$duplicated）が連続でコミットしています。"
