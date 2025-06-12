@@ -1,1 +1,3 @@
-print("eval 関数を使わずに出力だけします")
+command = "2 + 2"
+result = eval(command)
+print(result)
