@@ -26,18 +26,18 @@ jobs:
           prompt_file: "./claude_prompt.txt"
           allowed_tools: "GlobTool,Bash,View,Write,Read,Edit"
         env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
 
-    fail-on-error:
+  fail-on-error:
     name: "Fail on ❌ in latest comment"
     needs: review-via-claude
     runs-on: ubuntu-latest
     steps:
-        - name: Check for ❌ in latest PR comment
+      - name: Check for ❌ in latest PR comment
         env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-            latest=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q ".comments[-1].body")
-            echo "💬 Latest comment: $latest"
-            echo "$latest" | grep -q "❌" && exit 1 || exit 0
+          latest=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q ".comments[-1].body")
+          echo "💬 Latest comment: $latest"
+          echo "$latest" | grep -q "❌" && exit 1 || exit 0
