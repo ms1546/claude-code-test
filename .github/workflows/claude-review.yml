@@ -29,12 +29,15 @@ jobs:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             PR_NUMBER: ${{ github.event.pull_request.number }}
 
-  fail-on-error:
-    name: "Fail on ❌ comment"
+    fail-on-error:
+    name: "Fail on ❌ in latest comment"
     needs: review-via-claude
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          latest=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q ".comments[-1].body")
-          echo "💬 Latest comment: $latest"
-          echo "$latest" | grep -q "❌" && exit 1 || exit 0
+        - name: Check for ❌ in latest PR comment
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            latest=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q ".comments[-1].body")
+            echo "💬 Latest comment: $latest"
+            echo "$latest" | grep -q "❌" && exit 1 || exit 0
