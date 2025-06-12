@@ -5,8 +5,43 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
+  check-commit-duplicates:
+    name: "Check for consecutive commit author duplicates"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up GitHub CLI
+        uses: cli/gh-action@v2
+
+      - name: Get latest commits and check for duplicate authors
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔍 Checking commit authors in PR..."
+
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          authors=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json commits \
+          -q '.commits[].author.user.login')
+
+          echo "🧾 Authors: $authors"
+
+          prev=""
+          echo "$authors" | jq -r '.[]' | while read author; do
+          if [ "$author" = "$prev" ]; then
+            echo "❌ 連続で同じユーザー（$author）がコミットしています。"
+            exit 1
+          fi
+          prev="$author"
+          done
+
+          echo "✅ OK: 連続する重複コミットはありません。"
+
   review-via-claude:
     name: "AI Keyword Check via Claude Code"
+    needs: check-commit-duplicates
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
