@@ -20,8 +20,8 @@ jobs:
           PR_NUMBER=${{ github.event.pull_request.number }}
           REPO=${{ github.repository }}
 
-          authors=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json commits \
-          -q '.commits[].commit.author.name')
+          authors=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json commits -q '.commits[].author.name')
+
 
           echo "🧾 Authors: $authors"
 
