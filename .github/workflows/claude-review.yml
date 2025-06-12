@@ -27,6 +27,7 @@ jobs:
           allowed_tools: "GlobTool,Bash,View,Write,Read,Edit"
         env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            PR_NUMBER: ${{ github.event.pull_request.number }}
 
   fail-on-error:
     name: "Fail on ❌ comment"
