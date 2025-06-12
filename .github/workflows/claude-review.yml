@@ -21,7 +21,7 @@ jobs:
           REPO=${{ github.repository }}
 
           authors=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json commits \
-          -q '.commits[].author.user.login')
+          -q '.commits[].commit.author.name')
 
           echo "🧾 Authors: $authors"
 
