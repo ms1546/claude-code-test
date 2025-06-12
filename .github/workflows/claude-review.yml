@@ -37,7 +37,7 @@ jobs:
                 }
               }
             }' \
-          -f owner="$OWNER" -f repo="$REPO" -f number="$PR_NUMBER" \
+          -f owner="$OWNER" -f repo="$REPO" -F number="$PR_NUMBER" \
           --jq '.data.repository.pullRequest.commits.nodes[].commit.author.name')
 
           echo "🧾 Authors:"
