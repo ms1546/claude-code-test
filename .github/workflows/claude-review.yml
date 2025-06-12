@@ -1,4 +1,4 @@
-name: "🩷 Claude Code Python Keyword Checker"
+name: 🩷 Claude Python Keyword Checker
 
 on:
   pull_request:
@@ -6,41 +6,35 @@ on:
 
 jobs:
   review-via-claude:
-    name: "Run AI-powered keyword check"
+    name: "AI Keyword Check via Claude Code"
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install pygithub asttokens
+      - run: pip install pygithub asttokens
 
-      - name: Run review script via Claude Code
+      - name: Trigger Claude review once
+        id: claude
         uses: anthropics/claude-code-base-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt_file: "./claude_prompt.txt"
-          allowed_tools: "Bash(git:*),View,GlobTool"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          prompt_file: ".github/scripts/claude_prompt.txt"
+          allowed_tools: "Bash(git diff --name-only HEAD~1),Bash(git diff HEAD~1),View,GlobTool,GrepTool,Write"
+          max_turns: "1"
+          timeout_minutes: "5"
 
   fail-on-error:
-    name: "Fail if ❌ present in last AI comment"
+    name: "Fail on ❌ comment"
     needs: review-via-claude
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch latest comment
-        run: |
+      - run: |
           latest=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q ".comments[-1].body")
-          echo "💬 Latest PR comment: $latest"
-          if echo "$latest" | grep -q "❌"; then
-            echo "::error::❌ Keyword not used. Failing job."
-            exit 1
-          fi
+          echo "💬 Latest comment: $latest"
+          echo "$latest" | grep -q "❌" && exit 1 || exit 0
