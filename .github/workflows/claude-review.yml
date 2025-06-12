@@ -1,0 +1,46 @@
+name: "🩷 Claude Code Python Keyword Checker"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review-via-claude:
+    name: "Run AI-powered keyword check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pygithub asttokens
+
+      - name: Run review script via Claude Code
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt_file: "./claude_prompt.txt"
+          allowed_tools: "Bash(git:*),View,GlobTool"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  fail-on-error:
+    name: "Fail if ❌ present in last AI comment"
+    needs: review-via-claude
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch latest comment
+        run: |
+          latest=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q ".comments[-1].body")
+          echo "💬 Latest PR comment: $latest"
+          if echo "$latest" | grep -q "❌"; then
+            echo "::error::❌ Keyword not used. Failing job."
+            exit 1
+          fi
