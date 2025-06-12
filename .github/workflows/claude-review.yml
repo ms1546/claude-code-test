@@ -23,7 +23,7 @@ jobs:
         uses: anthropics/claude-code-base-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt_file: ".github/scripts/claude_prompt.txt"
+          prompt_file: "./claude_prompt.txt"
           allowed_tools: "GlobTool,Bash,View,Write,Read,Edit"
           max_turns: "3"
           timeout_minutes: "5"
