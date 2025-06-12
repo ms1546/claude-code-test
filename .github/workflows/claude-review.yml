@@ -1,4 +1,4 @@
-name: "🩷 Claude Code Python Keyword Checker"
+name: 🩷 Claude Python Keyword Checker
 
 on:
   pull_request:
@@ -6,41 +6,38 @@ on:
 
 jobs:
   review-via-claude:
-    name: "Run AI-powered keyword check"
+    name: "AI Keyword Check via Claude Code"
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install pygithub asttokens
+      - run: pip install pygithub asttokens
 
-      - name: Run review script via Claude Code
+      - name: Trigger Claude review once
         uses: anthropics/claude-code-base-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt_file: "./claude_prompt.txt"
-          allowed_tools: "Bash(git:*),View,GlobTool"
+          allowed_tools: "GlobTool,Bash,View,Write,Read,Edit"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            PR_NUMBER: ${{ github.event.pull_request.number }}
 
-  fail-on-error:
-    name: "Fail if ❌ present in last AI comment"
+    fail-on-error:
+    name: "Fail on ❌ in latest comment"
     needs: review-via-claude
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch latest comment
+        - name: Check for ❌ in latest PR comment
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          latest=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q ".comments[-1].body")
-          echo "💬 Latest PR comment: $latest"
-          if echo "$latest" | grep -q "❌"; then
-            echo "::error::❌ Keyword not used. Failing job."
-            exit 1
-          fi
+            latest=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q ".comments[-1].body")
+            echo "💬 Latest comment: $latest"
+            echo "$latest" | grep -q "❌" && exit 1 || exit 0
