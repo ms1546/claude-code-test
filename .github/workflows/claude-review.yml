@@ -45,27 +45,22 @@ jobs:
           index=0
           duplicated=""
           echo "$authors" | while read author; do
-          if [ "$author" = "$prev" ]; then
-            duplicated="$author"
-            break
-          fi
-          prev="$author"
-          index=$((index + 1))
+            if [ "$author" = "$prev" ]; then
+              duplicated="$author"
+              break
+            fi
+            prev="$author"
+            index=$((index + 1))
           done
 
           if [ -n "$duplicated" ]; then
-           echo "❌ 同じ author.name（$duplicated）が連続でコミットしています。"
+            echo "❌ 同じ author.name（$duplicated）が連続でコミットしています。"
 
-           MESSAGE=$(cat <<EOF
-            ❌ チェケラ〜！連続で同じユーザー **${duplicated}** がコミットしてるよ〜💥
-            イケてるチーム開発には適度な分担が大事っしょ？🌈✨
-            誰かと一緒に push して、ギャルパワー分散しよ〜💕
-            EOF
-          )
+            MESSAGE="❌ チェケラ〜！連続で同じユーザー **${duplicated}** がコミットしてるよ〜💥イケてるチーム開発には適度な分担が大事っしょ？🌈✨誰かと一緒に push して、ギャルパワー分散しよ〜💕"
 
-          gh pr comment "$PR_NUMBER" --body "$MESSAGE" --repo "$OWNER/$REPO"
+            gh pr comment "$PR_NUMBER" --body "$MESSAGE" --repo "$OWNER/$REPO"
 
-          exit 1
+            exit 1
           fi
 
           echo "✅ OK: 重複 author.name はありません。"
