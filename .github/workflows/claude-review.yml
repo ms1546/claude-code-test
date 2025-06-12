@@ -11,9 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up GitHub CLI
-        uses: cli/gh-action@v2
-
       - name: Get latest commits and check for duplicate authors
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
