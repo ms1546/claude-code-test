@@ -1,1 +1,1 @@
-result = eval("2 + 2")
+print("eval 関数を使ってないよ")
