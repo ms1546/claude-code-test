@@ -5,19 +5,71 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  review-via-claude:
-    name: "AI Keyword Check via Claude Code"
+  check-commit-author:
+    name: "Check for consecutive commit authors"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+      - name: Check authors using gh api
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔍 Checking commit authors in PR..."
 
-      - run: pip install pygithub asttokens
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          OWNER=${{ github.repository_owner }}
+          REPO=$(basename "${{ github.repository }}")
+
+          authors=$(gh api graphql -f query='
+            query($owner:String!, $repo:String!, $number:Int!) {
+              repository(owner:$owner, name:$repo) {
+                pullRequest(number:$number) {
+                  commits(first:100) {
+                    nodes {
+                      commit {
+                        author {
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }' \
+          -f owner="$OWNER" -f repo="$REPO" -F number="$PR_NUMBER" \
+          --jq '.data.repository.pullRequest.commits.nodes[].commit.author.name')
+
+          prev=""
+          duplicated=""
+
+          while read author; do
+          if [ "$author" = "$prev" ]; then
+            duplicated="$author"
+            break
+          fi
+          prev="$author"
+          done <<< "$authors"
+
+          if [ -n "$duplicated" ]; then
+            echo "❌ 同じ author.name（$duplicated）が連続でコミットしています。"
+
+            MESSAGE="❌ チェケラ〜！連続で同じユーザー **${duplicated}** がコミットしてるよ〜💥イケてるチーム開発には適度な分担が大事っしょ？🌈✨誰かと一緒に push して、ギャルパワー分散しよ〜💕"
+
+            gh pr comment "$PR_NUMBER" --body "$MESSAGE" --repo "$OWNER/$REPO"
+
+            exit 1
+          fi
+
+          echo "✅ OK: 重複 author.name はありません。"
+
+  review-via-claude:
+    name: "AI Keyword Check via Claude Code"
+    needs: check-commit-author
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Trigger Claude review once
         uses: anthropics/claude-code-base-action@beta
@@ -26,18 +78,22 @@ jobs:
           prompt_file: "./claude_prompt.txt"
           allowed_tools: "GlobTool,Bash,View,Write,Read,Edit"
         env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
 
-    fail-on-error:
+  fail-on-error:
     name: "Fail on ❌ in latest comment"
     needs: review-via-claude
     runs-on: ubuntu-latest
+
     steps:
-        - name: Check for ❌ in latest PR comment
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for ❌ in latest PR comment
         env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-            latest=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q ".comments[-1].body")
-            echo "💬 Latest comment: $latest"
-            echo "$latest" | grep -q "❌" && exit 1 || exit 0
+          latest=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q ".comments[-1].body")
+          echo "💬 Latest comment: $latest"
+          echo "$latest" | grep -q "❌" && exit 1 || exit 0
